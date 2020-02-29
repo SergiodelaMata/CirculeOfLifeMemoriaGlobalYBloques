@@ -111,15 +111,36 @@ int main(int argc, char* argv[])
     }
     int size = number_rows * number_columns;
     int width = number_columns;
-    int counter = 1;
     if (size < 8*8)
     {
-        
+        number_threads = size;
+        operation_small_matrix(size, width, number_columns, number_threads)
+    }
+    else if (size < 16 * 16)
+    {
+
+    }
+    else if (size < 32 * 32)
+    {
+
+    }
+    else
+    {
+        printf("No son válidas las dimensiones introducidas para la matriz.\n");
     }
 
+
+    getchar();
+    getchar();
+    return 0;
+}
+
+void operation_small_matrix(int size, int width, int nBlocks, int nThreads)
+{
+    int counter = 1;
     char* a = (char*)malloc(size * sizeof(char));
     char* b = (char*)malloc(size * sizeof(char));
-    generate_matrix(a, size, number_blocks, size);
+    generate_matrix(a, size, nBlocks, nThreads);
     printf("Situacion Inicial:\n");
     for (int i = 0; i < size; i++)//Representación matriz inicial
     {
@@ -136,7 +157,7 @@ int main(int argc, char* argv[])
     {
         if (counter % 2 == 1)
         {
-            step_life(a, b, width, size, number_blocks, size);
+            step_life(a, b, width, size, nBlocks, nThreads);
             printf("Matriz paso %d:\n", counter);
             for (int i = 0; i < size; i++)//Representación matriz inicial
             {
@@ -152,7 +173,7 @@ int main(int argc, char* argv[])
         }
         else
         {
-            step_life(b, a, width, size, number_blocks, size);
+            step_life(b, a, width, size, nBlocks, nThreads);
             printf("Matriz paso %d:\n", counter);
             for (int i = 0; i < size; i++)//Representación matriz inicial
             {
@@ -175,10 +196,8 @@ int main(int argc, char* argv[])
 
     free(a);
     free(b);
-    getchar();
-    getchar();
-    return 0;
 }
+
 
 void generate_matrix(char* m, int size, int nBlocks, int nThreads)
 {
