@@ -23,77 +23,183 @@ __global__ void make_rand(int seed, char* m, int size) {
         m[num] = 'X';
     }
 }
-
-__global__ void prepare_matrix(char* p)
+//Se da el valor inicial de las distintas casillas de la matriz
+__global__ void prepare_matrix(char* p, int number_columns, int number_rows, int width_block, int situation)
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    p[idx] = 'O';
-}
-
-//Se genera una matriz de manera que los elementos bajan una fila
-__global__ void matrix_operation(char* m, char* p, int width, int size) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int counter = 0;
-    if ((idx % width != 0) && (idx - width >= 0) && (m[idx - width - 1] == 'X')) //Esquina superior izquierda
-    {
-        counter++;
-    }
-    if ((idx % width != 0) && (m[idx - 1] == 'X')) //Lateral izquierdo
-    {
-        counter++;
-    }
-    if ((idx - width >= 0) && (m[idx - width] == 'X')) //Lateral superior
-    {
-        counter++;
-    }
-    if ((idx % width != width - 1) && (idx - width >= 0) && (m[idx - width + 1] == 'X')) //Esquina superior derecha
-    {
-        counter++;
-    }
-    if ((idx % width != width - 1) && (m[idx + 1] == 'X')) //Lateral izquierdo
-    {
-        counter++;
-    }
-    if ((idx % width != 0) && (idx + width < size) && (m[idx + width - 1] == 'X')) //Esquina inferior izquierda
-    {
-        counter++;
-    }
-    if ((idx + width < size) && (m[idx + width] == 'X')) //Lateral inferior
-    {
-        counter++;
-    }
-    if ((idx % width != width - 1) && (idx + width < size) && (m[idx + width + 1] == 'X')) //Esquina inferior derecha
-    {
-        counter++;
-    }
-    if ((counter == 3) && (m[idx] == 'O')) // Una célula muerte se convierte en viva si tiene 3 células vivas alrededor de ella
-    {
-        p[idx] = 'X';
-    }
-    else if (((counter < 2) || (counter > 3)) && (m[idx] == 'X')) // Una célula viva se convierte en muerte si alrededor de ella hay un número de células distinto de 2 o 3
+    int valAux = 0;
+    if (situation == 0) // Caso en el que el número de filas y el número de columnas son múltiplos del width de los bloques creados
     {
         p[idx] = 'O';
     }
-    else //La célula mantiene su estado
+    else if ((situation == 1) && (idx % ((number_columns / width_block + 1) * width_block) < number_columns)) 
+        // Caso en el que el número de filas es múltiplo del width de los bloques creados
+        // y que el id del hilo se encuentra en una columna interior al bloque que no es completado
     {
-        p[idx] = m[idx];
+        // Dado que el idx no tiene porque coincidir con la posición de la matriz donde se debe colocar el valor se debe modificar el valor de acuerdo al número de columnas
+        // Se obtiene el número de bloques en exceso para representar todas las columnas
+        valAux = idx / ((number_columns / width_block + 1) * width_block); 
+        // Se realiza el producto de lo ya se ha obtenido con la diferencia entre el número de columnas de número de bloques en exceso y el númerro de columnas que realmente tiene la matriz 
+        valAux *= (((number_columns / width_block + 1) * width_block) - number_columns);
+        // Se coloca el valor en la posición que se obtiene de diferencia entre el id del hilo y el valor previamente obtenido
+        p[idx -  valAux] = 'O';
+    }
+    else if ((situation == 2) && (idx < number_rows*number_columns))
+        // Caso en el que el número de columnas es múltiplo del width de los bloques creados
+        // y que el id es inferior al tamaño de la matriz a partir del número de elementos en cada fila y en cada columna 
+    {
+        p[idx] = 'O';
+    }
+    else if ((situation == 3) && (idx % ((number_columns / width_block + 1) * width_block) < number_columns) && (idx - (idx / ((number_columns / width_block + 1) * width_block)) * (((number_columns / width_block + 1) * width_block) - number_columns) < number_rows * number_columns))
+        // Caso en el que el número de filas y el número de columnas no son múltiplos del width de los bloques creados,
+        // que el id del hilo se encuentra en una columna interior al bloque que no es completado 
+        // y que el id es inferior reajustado a las dimensiones de la matriz dada es menor al tamaño de la matriz a partir del número de elementos en cada fila y en cada columna
+    {
+        // Dado que el idx no tiene porque coincidir con la posición de la matriz donde se debe colocar el valor se debe modificar el valor de acuerdo al número de columnas
+        // Se obtiene el número de bloques en exceso para representar todas las columnas
+        valAux = idx / ((number_columns / width_block + 1) * width_block);
+        // Se realiza el producto de lo ya se ha obtenido con la diferencia entre el número de columnas de número de bloques en exceso y el númerro de columnas que realmente tiene la matriz 
+        valAux *= (((number_columns / width_block + 1) * width_block) - number_columns);
+        // Se coloca el valor en la posición que se obtiene de diferencia entre el id del hilo y el valor previamente obtenido
+        p[idx - valAux] = 'O';
     }
 }
 
-void operation_small_matrix(int size, int width, int nBlocks, int nThreads, char execution_mode);
-void generate_matrix(char* m, int size, int nBlocks, int nThreads);
+//Se genera una matriz de manera que los elementos bajan una fila
+__global__ void matrix_operation(char* m, char* p, int width, int size, int number_columns, int number_rows, int width_block, int situation) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int counter = 0;
+    int valAux = 0;
+    boolean verify = false;
+    if (situation == 0)// Caso en el que el número de filas y el número de columnas son múltiplos del width de los bloques creados
+    {
+        verify = true;
+    }
+    else if ((situation == 1) && (idx % ((number_columns / width_block + 1) * width_block) < number_columns))
+        // Caso en el que el número de filas es múltiplo del width de los bloques creados
+        // y que el id del hilo se encuentra en una columna interior al bloque que no es completado
+    {
+        verify = true;
+    }
+    else if ((situation == 2) && (idx < number_rows * number_columns))
+        // Caso en el que el número de columnas es múltiplo del width de los bloques creados
+        // y que el id es inferior al tamaño de la matriz a partir del número de elementos en cada fila y en cada columna 
+    {
+        verify = true;
+    }
+    else if ((situation == 3) && (idx % ((number_columns / width_block + 1) * width_block) < number_columns) && (idx - (idx / ((number_columns / width_block + 1) * width_block)) * (((number_columns / width_block + 1) * width_block) - number_columns) < number_rows * number_columns))
+        // Caso en el que el número de filas y el número de columnas no son múltiplos del width de los bloques creados,
+        // que el id del hilo se encuentra en una columna interior al bloque que no es completado 
+        // y que el id es inferior reajustado a las dimensiones de la matriz dada es menor al tamaño de la matriz a partir del número de elementos en cada fila y en cada columna
+    {
+        verify = true;
+    }
+    if (verify) //Solo realizarán esta operación aquellos hilos que hayan cumplido una de las condiciones anteriores
+    {
+        if ((idx % width != 0) && (idx - width >= 0) && (m[idx - width - 1] == 'X')) // Estudia si existe esquina superior izquierda y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((idx % width != 0) && (m[idx - 1] == 'X')) //Estudia si existe el casilla en el lateral izquierdo y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((idx - width >= 0) && (m[idx - width] == 'X')) //Estudia si existe el casilla en el lateral superior y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((idx % width != width - 1) && (idx - width >= 0) && (m[idx - width + 1] == 'X')) // Estudia si existe esquina superior derecha y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((idx % width != width - 1) && (m[idx + 1] == 'X')) //Estudia si existe el casilla en el lateral derecho y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((idx % width != 0) && (idx + width < size) && (m[idx + width - 1] == 'X')) // Estudia si existe esquina inferior izquierda y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((idx + width < size) && (m[idx + width] == 'X')) //Estudia si existe el casilla en el lateral inferior y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((idx % width != width - 1) && (idx + width < size) && (m[idx + width + 1] == 'X')) // Estudia si existe esquina inferior derecha y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((counter == 3) && (m[idx] == 'O')) // Una célula muerte se convierte en viva si tiene 3 células vivas alrededor de ella
+        {
+            if (situation == 1 || situation == 3) // Tiene en cuenta los casos en los que el idx se debe modificar para ajustarse a la matriz dada
+            {
+                // Dado que el idx no tiene porque coincidir con la posición de la matriz donde se debe colocar el valor se debe modificar el valor de acuerdo al número de columnas
+                // Se obtiene el número de bloques en exceso para representar todas las columnas
+                valAux = idx / ((number_columns / width_block + 1) * width_block);
+                // Se realiza el producto de lo ya se ha obtenido con la diferencia entre el número de columnas de número de bloques en exceso y el númerro de columnas que realmente tiene la matriz 
+                valAux *= (((number_columns / width_block + 1) * width_block) - number_columns);
+                // Se coloca el valor en la posición que se obtiene de diferencia entre el id del hilo y el valor previamente obtenido
+                p[idx - valAux] = 'O';
+            }
+            else
+            {
+                p[idx] = 'X';
+            }
+        }
+        else if (((counter < 2) || (counter > 3)) && (m[idx] == 'X')) // Una célula viva se convierte en muerte si alrededor de ella hay un número de células distinto de 2 o 3
+        {
+            if (situation == 1 || situation == 3) // Tiene en cuenta los casos en los que el idx se debe modificar para ajustarse a la matriz dada
+            {
+                // Dado que el idx no tiene porque coincidir con la posición de la matriz donde se debe colocar el valor se debe modificar el valor de acuerdo al número de columnas
+            // Se obtiene el número de bloques en exceso para representar todas las columnas
+                valAux = idx / ((number_columns / width_block + 1) * width_block);
+                // Se realiza el producto de lo ya se ha obtenido con la diferencia entre el número de columnas de número de bloques en exceso y el númerro de columnas que realmente tiene la matriz 
+                valAux *= (((number_columns / width_block + 1) * width_block) - number_columns);
+                // Se coloca el valor en la posición que se obtiene de diferencia entre el id del hilo y el valor previamente obtenido
+                p[idx - valAux] = 'O';
+            }
+            else
+            {
+                p[idx] = 'O';
+            }
+            
+        }
+        else //La célula mantiene su estado
+        {
+            if (situation == 1 || situation == 3) // Tiene en cuenta los casos en los que el idx se debe modificar para ajustarse a la matriz dada
+            {
+                // Dado que el idx no tiene porque coincidir con la posición de la matriz donde se debe colocar el valor se debe modificar el valor de acuerdo al número de columnas
+                // Se obtiene el número de bloques en exceso para representar todas las columnas
+                valAux = idx / ((number_columns / width_block + 1) * width_block);
+                // Se realiza el producto de lo ya se ha obtenido con la diferencia entre el número de columnas de número de bloques en exceso y el númerro de columnas que realmente tiene la matriz 
+                valAux *= (((number_columns / width_block + 1) * width_block) - number_columns);
+                // Se coloca el valor en la posición que se obtiene de diferencia entre el id del hilo y el valor previamente obtenido
+                p[idx - valAux] = m[idx - valAux];
+            }
+            else
+            {
+                p[idx] = m[idx];            
+            }
+        }
+    }
+}
+
+void operation(int size, int width, int nBlocks, int nThreads, int number_columns, int number_rows, char execution_mode, int width_block, int situation);
+void generate_matrix(char* m, int size, int nBlocks, int nThreads, int number_columns, int number_rows, int width_block, int situation);
 int generate_random(int min, int max);
-void step_life(char* m, char* p, int width, int size, int nBlocks, int nThreads);
+void step_life(char* m, char* p, int width, int size, int nBlocks, int nThreads, int number_columns, int number_rows, int width_block, int situation);
 void show_info_gpu_card();
 int main(int argc, char* argv[])
 {
-    show_info_gpu_card();
+    show_info_gpu_card(); //Muestra las características de la tarjeta gráfica
     printf("Comienza el juego de la vida:\n");
+    int situation = 0;
     int number_blocks = 1;
     int number_threads = 1;
     int number_rows = 32;
     int number_columns = 32;
+    int width_block = 1;
     char execution_mode = 'a';
+    // Condiciones para los casos en los que se está pasando por terminal una serie de parámetros
     if (argc == 2)
     {
         execution_mode = argv[1][0];
@@ -111,21 +217,69 @@ int main(int argc, char* argv[])
     }
     int size = number_rows * number_columns;
     int width = number_columns;
-    if ((size <= 8*8)||(number_rows < 8) || (number_columns < 8))
+    if ((size <= 8*8)||(number_rows < 8) || (number_columns < 8)) 
+        // Si el tamaño de la matriz es inferior o igual a 64 o el cualquiera, ya sea el número de elementos por fila o por columna es inferior a 8
     {
         number_blocks = number_columns;
         number_threads = number_rows;
         //number_blocks = 1;
         //number_threads = size;
-        operation_small_matrix(size, width, number_blocks, number_threads, execution_mode);
+        operation(size, width, number_blocks, number_threads, number_columns, number_rows, execution_mode, width_block, situation);
     }
-    else if (size <= 16 * 16)
+    else if ((size <= 16 * 16) || (number_rows < 16) || (number_columns < 16))
+        // Si el tamaño de la matriz es inferior o igual a 256 o el cualquiera, ya sea el número de elementos por fila o por columna es inferior a 16
     {
+        width_block = 8;
+        number_threads = width_block * width_block;
+        if ((number_rows % width_block == 0) && (number_columns % width_block == 0)) // Número de elementos múltiplos de 8 tanto en fila como en columna
+        {
+            number_blocks = (number_rows / width_block) * (number_columns / width_block);
+            situation = 0;
+        }
+        else if (number_rows % width_block == 0)// Número de elementos múltiplos de 8 en fila 
 
+        {
+            number_blocks = (number_rows / width_block) * ((number_columns / width_block) + 1);
+            situation = 1;
+        }
+        else if (number_columns % width_block == 0)// Número de elementos múltiplos de 8 en columna
+        {
+            number_blocks = ((number_rows / width_block) + 1) * (number_columns / width_block);
+            situation = 2;
+        }
+        else
+        {
+            number_blocks = ((number_rows / width_block) + 1) * ((number_columns / width_block) + 1);
+            situation = 3;
+        }
+        operation(size, width, number_blocks, number_threads, number_columns, number_rows, execution_mode, width_block, situation);
     }
     else if (size <= 32 * 32)
+        // Si el tamaño de la matriz es inferior o igual a 1024 
     {
-
+        width_block = 16;
+        number_threads = width_block * width_block;
+        if ((number_rows % width_block == 0) && (number_columns % width_block == 0))// Número de elementos múltiplos de 16 tanto en fila como en columna
+        {
+            number_blocks = (number_rows / width_block) * (number_columns / width_block);
+            situation = 0;
+        }
+        else if (number_rows % width_block == 0)// Número de elementos múltiplos de 16 en fila 
+        {
+            number_blocks = (number_rows / width_block) * ((number_columns / width_block) + 1);
+            situation = 1;
+        }
+        else if (number_columns % width_block == 0)// Número de elementos múltiplos de 16 en columna
+        {
+            number_blocks = ((number_rows / width_block) + 1) * (number_columns / width_block);
+            situation = 2;
+        }
+        else
+        {
+            number_blocks = ((number_rows / width_block) + 1) * ((number_columns / width_block) + 1);
+            situation = 3;
+        }
+        operation(size, width, number_blocks, number_threads, number_columns, number_rows, execution_mode, width_block, situation);
     }
     else
     {
@@ -138,12 +292,13 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void operation_small_matrix(int size, int width, int nBlocks, int nThreads, char execution_mode) //Matrices menores a 8X8
+void operation(int size, int width, int nBlocks, int nThreads, int number_columns, int number_rows, char execution_mode, int width_block, int situation)
+//Realiza todas las operaciones del juego de la vida
 {
     int counter = 1;
     char* a = (char*)malloc(size * sizeof(char));
     char* b = (char*)malloc(size * sizeof(char));
-    generate_matrix(a, size, nBlocks, nThreads);
+    generate_matrix(a, size, nBlocks, nThreads, number_columns, number_rows, width_block, situation);
     printf("Situacion Inicial:\n");
     for (int i = 0; i < size; i++)//Representación matriz inicial
     {
@@ -160,7 +315,7 @@ void operation_small_matrix(int size, int width, int nBlocks, int nThreads, char
     {
         if (counter % 2 == 1)
         {
-            step_life(a, b, width, size, nBlocks, nThreads);
+            step_life(a, b, width, size, nBlocks, nThreads, number_columns, number_rows, width_block, situation);
             printf("Matriz paso %d:\n", counter);
             for (int i = 0; i < size; i++)//Representación matriz inicial
             {
@@ -176,7 +331,7 @@ void operation_small_matrix(int size, int width, int nBlocks, int nThreads, char
         }
         else
         {
-            step_life(b, a, width, size, nBlocks, nThreads);
+            step_life(b, a, width, size, nBlocks, nThreads, number_columns, number_rows, width_block, situation);
             printf("Matriz paso %d:\n", counter);
             for (int i = 0; i < size; i++)//Representación matriz inicial
             {
@@ -202,22 +357,24 @@ void operation_small_matrix(int size, int width, int nBlocks, int nThreads, char
 }
 
 
-void generate_matrix(char* m, int size, int nBlocks, int nThreads)
+void generate_matrix(char* m, int size, int nBlocks, int nThreads, int number_columns, int number_rows, int width_block, int situation)
+// Genera la matriz con su estado inicial
 {
     srand(time(NULL));
     int seed = rand() % 50000;
     char* m_d;
-    int numElem = generate_random(1, size*0.15);
+    int numElem = generate_random(1, size*0.15);// Genera un número aleatorio de máxima número de células vivas en la etapa inicial siendo el máximo un 15% del máximo número de casillas
     cudaMalloc((void**)&m_d, size * sizeof(char));
     cudaMemcpy(m_d, m, size * sizeof(char), cudaMemcpyHostToDevice);
-    prepare_matrix << <nBlocks, nThreads >> > (m_d);
-    make_rand << <1, numElem >> > (seed, m_d, size);
+    prepare_matrix << <nBlocks, nThreads >> > (m_d, number_columns, number_rows, width_block, situation); //Prepara la matriz con todas las casillas con células muertas
+    make_rand << <1, numElem >> > (seed, m_d, size); // Va colocando de forma aleatoria células vivas en las casillas de la matriz
     cudaDeviceSynchronize();
     cudaMemcpy(m, m_d, size * sizeof(char), cudaMemcpyDeviceToHost);
     cudaFree(m_d);
 }
 
-void step_life(char* m, char* p, int width, int size, int nBlocks, int nThreads)
+void step_life(char* m, char* p, int width, int size, int nBlocks, int nThreads, int number_columns, int number_rows, int width_block, int situation)
+// Genera la matriz resultado a partir de una matriz inicial con las restricciones marcadas para cada casilla
 {
     char* m_d;
     char* p_d;
@@ -225,7 +382,7 @@ void step_life(char* m, char* p, int width, int size, int nBlocks, int nThreads)
     cudaMalloc((void**)&p_d, size * sizeof(char));
     cudaMemcpy(m_d, m, size * sizeof(char), cudaMemcpyHostToDevice);
     cudaMemcpy(p_d, p, size * sizeof(char), cudaMemcpyHostToDevice);
-    matrix_operation << <nBlocks, nThreads >> > (m_d, p_d, width, size);
+    matrix_operation << <nBlocks, nThreads >> > (m_d, p_d, width, size, number_columns, number_rows, width_block, situation);// Estudia el cambio o no de valor de las distintas casillas de la matriz
     cudaDeviceSynchronize();
     cudaMemcpy(m, m_d, size * sizeof(char), cudaMemcpyDeviceToHost);
     cudaMemcpy(p, p_d, size * sizeof(char), cudaMemcpyDeviceToHost);
@@ -233,14 +390,14 @@ void step_life(char* m, char* p, int width, int size, int nBlocks, int nThreads)
     cudaFree(p_d);
 }
 
-int generate_random(int min, int max)
+int generate_random(int min, int max) // Genera un número aleatorio entre un mínimo y un máximo
 {
     srand(time(NULL));
     int randNumber = rand() % (max - min) + min;
     return randNumber;
 }
 
-void show_info_gpu_card()
+void show_info_gpu_card() // Muestra las características de la tarjeta gráfica usada
 {
     cudaDeviceProp prop;
 
