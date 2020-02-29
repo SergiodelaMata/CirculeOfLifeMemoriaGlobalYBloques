@@ -80,7 +80,7 @@ __global__ void matrix_operation(char* m, char* p, int width, int size) {
     }
 }
 
-
+void operation_small_matrix(int size, int width, int nBlocks, int nThreads, char execution_mode);
 void generate_matrix(char* m, int size, int nBlocks, int nThreads);
 int generate_random(int min, int max);
 void step_life(char* m, char* p, int width, int size, int nBlocks, int nThreads);
@@ -111,16 +111,19 @@ int main(int argc, char* argv[])
     }
     int size = number_rows * number_columns;
     int width = number_columns;
-    if (size < 8*8)
+    if ((size <= 8*8)||(number_rows < 8) || (number_columns < 8))
     {
-        number_threads = size;
-        operation_small_matrix(size, width, number_columns, number_threads)
+        number_blocks = number_columns;
+        number_threads = number_rows;
+        //number_blocks = 1;
+        //number_threads = size;
+        operation_small_matrix(size, width, number_blocks, number_threads, execution_mode);
     }
-    else if (size < 16 * 16)
+    else if (size <= 16 * 16)
     {
 
     }
-    else if (size < 32 * 32)
+    else if (size <= 32 * 32)
     {
 
     }
@@ -135,7 +138,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void operation_small_matrix(int size, int width, int nBlocks, int nThreads)
+void operation_small_matrix(int size, int width, int nBlocks, int nThreads, char execution_mode) //Matrices menores a 8X8
 {
     int counter = 1;
     char* a = (char*)malloc(size * sizeof(char));
@@ -208,7 +211,7 @@ void generate_matrix(char* m, int size, int nBlocks, int nThreads)
     cudaMalloc((void**)&m_d, size * sizeof(char));
     cudaMemcpy(m_d, m, size * sizeof(char), cudaMemcpyHostToDevice);
     prepare_matrix << <nBlocks, nThreads >> > (m_d);
-    make_rand << <nBlocks, numElem >> > (seed, m_d, size);
+    make_rand << <1, numElem >> > (seed, m_d, size);
     cudaDeviceSynchronize();
     cudaMemcpy(m, m_d, size * sizeof(char), cudaMemcpyDeviceToHost);
     cudaFree(m_d);
