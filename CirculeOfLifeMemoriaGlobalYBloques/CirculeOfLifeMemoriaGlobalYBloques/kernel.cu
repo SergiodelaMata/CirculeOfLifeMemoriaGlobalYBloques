@@ -96,88 +96,119 @@ __global__ void matrix_operation(char* m, char* p, int width, int size, int numb
     }
     if (verify) //Solo realizarán esta operación aquellos hilos que hayan cumplido una de las condiciones anteriores
     {
-        if ((idx % width != 0) && (idx - width >= 0) && (m[idx - width - 1] == 'X')) // Estudia si existe esquina superior izquierda y si tiene una célula viva
+        if((situation == 0) || (situation == 2))
         {
-            counter++;
-        }
-        if ((idx % width != 0) && (m[idx - 1] == 'X')) //Estudia si existe el casilla en el lateral izquierdo y si tiene una célula viva
-        {
-            counter++;
-        }
-        if ((idx - width >= 0) && (m[idx - width] == 'X')) //Estudia si existe el casilla en el lateral superior y si tiene una célula viva
-        {
-            counter++;
-        }
-        if ((idx % width != width - 1) && (idx - width >= 0) && (m[idx - width + 1] == 'X')) // Estudia si existe esquina superior derecha y si tiene una célula viva
-        {
-            counter++;
-        }
-        if ((idx % width != width - 1) && (m[idx + 1] == 'X')) //Estudia si existe el casilla en el lateral derecho y si tiene una célula viva
-        {
-            counter++;
-        }
-        if ((idx % width != 0) && (idx + width < size) && (m[idx + width - 1] == 'X')) // Estudia si existe esquina inferior izquierda y si tiene una célula viva
-        {
-            counter++;
-        }
-        if ((idx + width < size) && (m[idx + width] == 'X')) //Estudia si existe el casilla en el lateral inferior y si tiene una célula viva
-        {
-            counter++;
-        }
-        if ((idx % width != width - 1) && (idx + width < size) && (m[idx + width + 1] == 'X')) // Estudia si existe esquina inferior derecha y si tiene una célula viva
-        {
-            counter++;
-        }
-        if ((counter == 3) && (m[idx] == 'O')) // Una célula muerte se convierte en viva si tiene 3 células vivas alrededor de ella
-        {
-            if (situation == 1 || situation == 3) // Tiene en cuenta los casos en los que el idx se debe modificar para ajustarse a la matriz dada
+            if ((idx % width != 0) && (idx - width >= 0) && (m[idx - width - 1] == 'X')) // Estudia si existe esquina superior izquierda y si tiene una célula viva
             {
-                // Dado que el idx no tiene porque coincidir con la posición de la matriz donde se debe colocar el valor se debe modificar el valor de acuerdo al número de columnas
+                counter++;
+            }
+            if ((idx % width != 0) && (m[idx - 1] == 'X')) //Estudia si existe el casilla en el lateral izquierdo y si tiene una célula viva
+            {
+                counter++;
+            }
+            if ((idx - width >= 0) && (m[idx - width] == 'X')) //Estudia si existe el casilla en el lateral superior y si tiene una célula viva
+            {
+                counter++;
+            }
+            if ((idx % width != width - 1) && (idx - width >= 0) && (m[idx - width + 1] == 'X')) // Estudia si existe esquina superior derecha y si tiene una célula viva
+            {
+                counter++;
+            }
+            if ((idx % width != width - 1) && (m[idx + 1] == 'X')) //Estudia si existe el casilla en el lateral derecho y si tiene una célula viva
+            {
+                counter++;
+            }
+            if ((idx % width != 0) && (idx + width < size) && (m[idx + width - 1] == 'X')) // Estudia si existe esquina inferior izquierda y si tiene una célula viva
+            {
+                counter++;
+            }
+            if ((idx + width < size) && (m[idx + width] == 'X')) //Estudia si existe el casilla en el lateral inferior y si tiene una célula viva
+            {
+                counter++;
+            }
+            if ((idx % width != width - 1) && (idx + width < size) && (m[idx + width + 1] == 'X')) // Estudia si existe esquina inferior derecha y si tiene una célula viva
+            {
+                counter++;
+            }
+        }
+        else if((situation == 1) || (situation == 3))
+        {
+            // Dado que el idx no tiene porque coincidir con la posición de la matriz donde se debe colocar el valor se debe modificar el valor de acuerdo al número de columnas
+            // Se obtiene el número de bloques en exceso para representar todas las columnas
+            valAux = idx / ((number_columns / width_block + 1) * width_block);
+            // Se realiza el producto de lo ya se ha obtenido con la diferencia entre el número de columnas de número de bloques en exceso y el númerro de columnas que realmente tiene la matriz 
+            valAux *= (((number_columns / width_block + 1) * width_block) - number_columns);
+            // Se coloca el valor en la posición que se obtiene de diferencia entre el id del hilo y el valor previamente obtenido
+            valAux = idx - valAux;
+            //p[idx - valAux] = 'O';
+            if ((valAux % width != 0) && (valAux - width >= 0) && (m[valAux - width - 1] == 'X')) // Estudia si existe esquina superior izquierda y si tiene una célula viva
+            {
+                counter++;
+            }
+            if ((valAux % width != 0) && (m[valAux - 1] == 'X')) //Estudia si existe el casilla en el lateral izquierdo y si tiene una célula viva
+            {
+                counter++;
+            }
+            if ((valAux - width >= 0) && (m[valAux - width] == 'X')) //Estudia si existe el casilla en el lateral superior y si tiene una célula viva
+            {
+                counter++;
+            }
+            if ((valAux % width != width - 1) && (valAux - width >= 0) && (m[valAux - width + 1] == 'X')) // Estudia si existe esquina superior derecha y si tiene una célula viva
+            {
+                counter++;
+            }
+            if ((valAux % width != width - 1) && (m[valAux + 1] == 'X')) //Estudia si existe el casilla en el lateral derecho y si tiene una célula viva
+            {
+                counter++;
+            }
+            if ((valAux % width != 0) && (valAux + width < size) && (m[valAux + width - 1] == 'X')) // Estudia si existe esquina inferior izquierda y si tiene una célula viva
+            {
+                counter++;
+            }
+            if ((valAux + width < size) && (m[valAux + width] == 'X')) //Estudia si existe el casilla en el lateral inferior y si tiene una célula viva
+            {
+                counter++;
+            }
+            if ((valAux % width != width - 1) && (valAux + width < size) && (m[valAux + width + 1] == 'X')) // Estudia si existe esquina inferior derecha y si tiene una célula viva
+            {
+                counter++;
+            }
+            //printf("CUCU CUCU %d %d %d\n", idx, valAux, counter);
+        }
+        if (situation == 1 || situation == 3)
+        {
+            // Dado que el idx no tiene porque coincidir con la posición de la matriz donde se debe colocar el valor se debe modificar el valor de acuerdo al número de columnas
                 // Se obtiene el número de bloques en exceso para representar todas las columnas
-                valAux = idx / ((number_columns / width_block + 1) * width_block);
-                // Se realiza el producto de lo ya se ha obtenido con la diferencia entre el número de columnas de número de bloques en exceso y el númerro de columnas que realmente tiene la matriz 
-                valAux *= (((number_columns / width_block + 1) * width_block) - number_columns);
-                // Se coloca el valor en la posición que se obtiene de diferencia entre el id del hilo y el valor previamente obtenido
+            valAux = idx / ((number_columns / width_block + 1) * width_block);
+            // Se realiza el producto de lo ya se ha obtenido con la diferencia entre el número de columnas de número de bloques en exceso y el númerro de columnas que realmente tiene la matriz 
+            valAux *= (((number_columns / width_block + 1) * width_block) - number_columns);
+            // Se coloca el valor en la posición que se obtiene de diferencia entre el id del hilo y el valor previamente obtenido
+            if ((counter == 3) && (m[idx - valAux] == 'O')) // Una célula muerte se convierte en viva si tiene 3 células vivas alrededor de ella
+            {
                 p[idx - valAux] = 'O';
             }
-            else
+            else if (((counter < 2) || (counter > 3)) && (m[idx - valAux] == 'X')) // Una célula viva se convierte en muerte si alrededor de ella hay un número de células distinto de 2 o 3
+            {
+                p[idx - valAux] = 'O';
+            }
+            else //La célula mantiene su estado
+            {
+                p[idx - valAux] = m[idx - valAux];
+            }
+        }
+        else if((situation == 0) || (situation == 2)) // Situaciones 0 o 2
+        {
+            if ((counter == 3) && (m[idx] == 'O')) // Una célula muerte se convierte en viva si tiene 3 células vivas alrededor de ella
             {
                 p[idx] = 'X';
             }
-        }
-        else if (((counter < 2) || (counter > 3)) && (m[idx] == 'X')) // Una célula viva se convierte en muerte si alrededor de ella hay un número de células distinto de 2 o 3
-        {
-            if (situation == 1 || situation == 3) // Tiene en cuenta los casos en los que el idx se debe modificar para ajustarse a la matriz dada
-            {
-                // Dado que el idx no tiene porque coincidir con la posición de la matriz donde se debe colocar el valor se debe modificar el valor de acuerdo al número de columnas
-            // Se obtiene el número de bloques en exceso para representar todas las columnas
-                valAux = idx / ((number_columns / width_block + 1) * width_block);
-                // Se realiza el producto de lo ya se ha obtenido con la diferencia entre el número de columnas de número de bloques en exceso y el númerro de columnas que realmente tiene la matriz 
-                valAux *= (((number_columns / width_block + 1) * width_block) - number_columns);
-                // Se coloca el valor en la posición que se obtiene de diferencia entre el id del hilo y el valor previamente obtenido
-                p[idx - valAux] = 'O';
-            }
-            else
+            else if (((counter < 2) || (counter > 3)) && (m[idx] == 'X')) // Una célula viva se convierte en muerte si alrededor de ella hay un número de células distinto de 2 o 3
             {
                 p[idx] = 'O';
             }
-            
-        }
-        else //La célula mantiene su estado
-        {
-            if (situation == 1 || situation == 3) // Tiene en cuenta los casos en los que el idx se debe modificar para ajustarse a la matriz dada
+            else //La célula mantiene su estado
             {
-                // Dado que el idx no tiene porque coincidir con la posición de la matriz donde se debe colocar el valor se debe modificar el valor de acuerdo al número de columnas
-                // Se obtiene el número de bloques en exceso para representar todas las columnas
-                valAux = idx / ((number_columns / width_block + 1) * width_block);
-                // Se realiza el producto de lo ya se ha obtenido con la diferencia entre el número de columnas de número de bloques en exceso y el númerro de columnas que realmente tiene la matriz 
-                valAux *= (((number_columns / width_block + 1) * width_block) - number_columns);
-                // Se coloca el valor en la posición que se obtiene de diferencia entre el id del hilo y el valor previamente obtenido
-                p[idx - valAux] = m[idx - valAux];
-            }
-            else
-            {
-                p[idx] = m[idx];            
+                p[idx] = m[idx];
             }
         }
     }
