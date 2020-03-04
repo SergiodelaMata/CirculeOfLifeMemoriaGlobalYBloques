@@ -70,7 +70,7 @@ __global__ void matrix_operation(char* m, char* p, int width, int size, int numb
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     int counter = 0;
     int valAux = 0;
-    boolean verify = false;
+    bool verify = false;
     if (situation == 0)// Caso en el que el número de filas y el número de columnas son múltiplos del width de los bloques creados
     {
         verify = true;
@@ -96,42 +96,7 @@ __global__ void matrix_operation(char* m, char* p, int width, int size, int numb
     }
     if (verify) //Solo realizarán esta operación aquellos hilos que hayan cumplido una de las condiciones anteriores
     {
-        if((situation == 0) || (situation == 2))
-        {
-            if ((idx % width != 0) && (idx - width >= 0) && (m[idx - width - 1] == 'X')) // Estudia si existe esquina superior izquierda y si tiene una célula viva
-            {
-                counter++;
-            }
-            if ((idx % width != 0) && (m[idx - 1] == 'X')) //Estudia si existe el casilla en el lateral izquierdo y si tiene una célula viva
-            {
-                counter++;
-            }
-            if ((idx - width >= 0) && (m[idx - width] == 'X')) //Estudia si existe el casilla en el lateral superior y si tiene una célula viva
-            {
-                counter++;
-            }
-            if ((idx % width != width - 1) && (idx - width >= 0) && (m[idx - width + 1] == 'X')) // Estudia si existe esquina superior derecha y si tiene una célula viva
-            {
-                counter++;
-            }
-            if ((idx % width != width - 1) && (m[idx + 1] == 'X')) //Estudia si existe el casilla en el lateral derecho y si tiene una célula viva
-            {
-                counter++;
-            }
-            if ((idx % width != 0) && (idx + width < size) && (m[idx + width - 1] == 'X')) // Estudia si existe esquina inferior izquierda y si tiene una célula viva
-            {
-                counter++;
-            }
-            if ((idx + width < size) && (m[idx + width] == 'X')) //Estudia si existe el casilla en el lateral inferior y si tiene una célula viva
-            {
-                counter++;
-            }
-            if ((idx % width != width - 1) && (idx + width < size) && (m[idx + width + 1] == 'X')) // Estudia si existe esquina inferior derecha y si tiene una célula viva
-            {
-                counter++;
-            }
-        }
-        else if((situation == 1) || (situation == 3))
+        if ((situation == 1) || (situation == 3))
         {
             // Dado que el idx no tiene porque coincidir con la posición de la matriz donde se debe colocar el valor se debe modificar el valor de acuerdo al número de columnas
             // Se obtiene el número de bloques en exceso para representar todas las columnas
@@ -140,41 +105,46 @@ __global__ void matrix_operation(char* m, char* p, int width, int size, int numb
             valAux *= (((number_columns / width_block + 1) * width_block) - number_columns);
             // Se coloca el valor en la posición que se obtiene de diferencia entre el id del hilo y el valor previamente obtenido
             valAux = idx - valAux;
-            //p[idx - valAux] = 'O';
-            if ((valAux % width != 0) && (valAux - width >= 0) && (m[valAux - width - 1] == 'X')) // Estudia si existe esquina superior izquierda y si tiene una célula viva
-            {
-                counter++;
-            }
-            if ((valAux % width != 0) && (m[valAux - 1] == 'X')) //Estudia si existe el casilla en el lateral izquierdo y si tiene una célula viva
-            {
-                counter++;
-            }
-            if ((valAux - width >= 0) && (m[valAux - width] == 'X')) //Estudia si existe el casilla en el lateral superior y si tiene una célula viva
-            {
-                counter++;
-            }
-            if ((valAux % width != width - 1) && (valAux - width >= 0) && (m[valAux - width + 1] == 'X')) // Estudia si existe esquina superior derecha y si tiene una célula viva
-            {
-                counter++;
-            }
-            if ((valAux % width != width - 1) && (m[valAux + 1] == 'X')) //Estudia si existe el casilla en el lateral derecho y si tiene una célula viva
-            {
-                counter++;
-            }
-            if ((valAux % width != 0) && (valAux + width < size) && (m[valAux + width - 1] == 'X')) // Estudia si existe esquina inferior izquierda y si tiene una célula viva
-            {
-                counter++;
-            }
-            if ((valAux + width < size) && (m[valAux + width] == 'X')) //Estudia si existe el casilla en el lateral inferior y si tiene una célula viva
-            {
-                counter++;
-            }
-            if ((valAux % width != width - 1) && (valAux + width < size) && (m[valAux + width + 1] == 'X')) // Estudia si existe esquina inferior derecha y si tiene una célula viva
-            {
-                counter++;
-            }
-            //printf("CUCU CUCU %d %d %d\n", idx, valAux, counter);
+
         }
+        else if ((situation == 0) || (situation == 2))
+        {
+            valAux = idx;
+        }
+
+        if ((valAux % width != 0) && (valAux - width >= 0) && (m[valAux - width - 1] == 'X')) // Estudia si existe esquina superior izquierda y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((valAux % width != 0) && (m[valAux - 1] == 'X')) //Estudia si existe el casilla en el lateral izquierdo y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((valAux - width >= 0) && (m[valAux - width] == 'X')) //Estudia si existe el casilla en el lateral superior y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((valAux % width != width - 1) && (valAux - width >= 0) && (m[valAux - width + 1] == 'X')) // Estudia si existe esquina superior derecha y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((valAux % width != width - 1) && (m[valAux + 1] == 'X')) //Estudia si existe el casilla en el lateral derecho y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((valAux % width != 0) && (valAux + width < size) && (m[valAux + width - 1] == 'X')) // Estudia si existe esquina inferior izquierda y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((valAux + width < size) && (m[valAux + width] == 'X')) //Estudia si existe el casilla en el lateral inferior y si tiene una célula viva
+        {
+            counter++;
+        }
+        if ((valAux % width != width - 1) && (valAux + width < size) && (m[valAux + width + 1] == 'X')) // Estudia si existe esquina inferior derecha y si tiene una célula viva
+        {
+            counter++;
+        }
+
         if (situation == 1 || situation == 3)
         {
             // Dado que el idx no tiene porque coincidir con la posición de la matriz donde se debe colocar el valor se debe modificar el valor de acuerdo al número de columnas
@@ -185,7 +155,7 @@ __global__ void matrix_operation(char* m, char* p, int width, int size, int numb
             // Se coloca el valor en la posición que se obtiene de diferencia entre el id del hilo y el valor previamente obtenido
             if ((counter == 3) && (m[idx - valAux] == 'O')) // Una célula muerte se convierte en viva si tiene 3 células vivas alrededor de ella
             {
-                p[idx - valAux] = 'O';
+                p[idx - valAux] = 'X';
             }
             else if (((counter < 2) || (counter > 3)) && (m[idx - valAux] == 'X')) // Una célula viva se convierte en muerte si alrededor de ella hay un número de células distinto de 2 o 3
             {
@@ -394,7 +364,7 @@ void generate_matrix(char* m, int size, int nBlocks, int nThreads, int number_co
     srand(time(NULL));
     int seed = rand() % 50000;
     char* m_d;
-    int numElem = generate_random(1, size*0.15);// Genera un número aleatorio de máxima número de células vivas en la etapa inicial siendo el máximo un 15% del máximo número de casillas
+    int numElem = generate_random(1, size*0.25);// Genera un número aleatorio de máxima número de células vivas en la etapa inicial siendo el máximo un 15% del máximo número de casillas
     cudaMalloc((void**)&m_d, size * sizeof(char));
     cudaMemcpy(m_d, m, size * sizeof(char), cudaMemcpyHostToDevice);
     prepare_matrix << <nBlocks, nThreads >> > (m_d, number_columns, number_rows, width_block, situation); //Prepara la matriz con todas las casillas con células muertas
