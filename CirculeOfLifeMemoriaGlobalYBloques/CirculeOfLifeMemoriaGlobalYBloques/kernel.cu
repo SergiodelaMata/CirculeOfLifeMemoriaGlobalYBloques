@@ -189,16 +189,18 @@ void generate_matrix(char* m, int size, int nBlocks, int nThreads, int number_co
 int generate_random(int min, int max);
 void step_life(char* m, char* p, int width, int size, int nBlocks, int nThreads, int number_columns, int number_rows, int width_block, int situation);
 void show_info_gpu_card();
+int get_max_number_threads_block();
 int main(int argc, char* argv[])
 {
-    show_info_gpu_card(); //Muestra las características de la tarjeta gráfica
+    show_info_gpu_card(); // Muestra la información de la tarjeta gráfica
+    int maxThreads = get_max_number_threads_block(); // Devuelve el número máximo de hilos que se pueden ejecutar por bloque
     printf("Comienza el juego de la vida:\n");
     int situation = 0;
     int number_blocks = 1;
     int number_threads = 1;
     int number_rows = 32;
     int number_columns = 32;
-    int width_block = 1;
+    int width_block = 16;
     char execution_mode = 'a';
     // Condiciones para los casos en los que se está pasando por terminal una serie de parámetros
     if (argc == 2)
@@ -218,7 +220,7 @@ int main(int argc, char* argv[])
     }
     int size = number_rows * number_columns;
     int width = number_columns;
-    if ((size <= 8*8)||(number_rows < 8) || (number_columns < 8)) 
+    /*if ((size <= 8*8)||(number_rows < 8) || (number_columns < 8)) 
         // Si el tamaño de la matriz es inferior o igual a 64 o el cualquiera, ya sea el número de elementos por fila o por columna es inferior a 8
     {
         number_blocks = number_columns;
@@ -255,10 +257,10 @@ int main(int argc, char* argv[])
         }
         operation(size, width, number_blocks, number_threads, number_columns, number_rows, execution_mode, width_block, situation);
     }
-    else if (size <= 32 * 32)
+    else*/ if (size <= maxThreads)
         // Si el tamaño de la matriz es inferior o igual a 1024 
     {
-        width_block = 16;
+        //width_block = 16;
         number_threads = width_block * width_block;
         if ((number_rows % width_block == 0) && (number_columns % width_block == 0))// Número de elementos múltiplos de 16 tanto en fila como en columna
         {
@@ -396,6 +398,18 @@ int generate_random(int min, int max) // Genera un número aleatorio entre un mín
     srand(time(NULL));
     int randNumber = rand() % (max - min) + min;
     return randNumber;
+}
+
+int get_max_number_threads_block()// Devuelve el número máximo de hilos que se pueden ejecutar por bloque
+{
+    cudaDeviceProp prop;
+
+    int count;
+    //Obtención número de dispositivos compatibles con CUDA
+    HANDLE_ERROR(cudaGetDeviceCount(&count));
+    HANDLE_ERROR(cudaGetDeviceProperties(&prop, 0));
+    return prop.maxThreadsPerBlock;
+
 }
 
 void show_info_gpu_card() // Muestra las características de la tarjeta gráfica usada
