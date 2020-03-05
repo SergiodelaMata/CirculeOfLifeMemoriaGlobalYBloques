@@ -268,28 +268,28 @@ int main(int argc, char* argv[])
         number_threads = width_block * width_block;
         if ((number_rows % width_block == 0) && (number_columns % width_block == 0))// Número de elementos múltiplos de 16 tanto en fila como en columna
         {
-            number_blocks = (number_rows / width_block) * (number_columns / width_block);
+            number_blocks = (number_rows / width_block) * (number_columns / width_block); // Consideración de nº de bloques exactos formados por fila y por columna
             situation = 0;
         }
         else if (number_rows % width_block == 0)// Número de elementos múltiplos de 16 en fila 
         {
-            number_blocks = (number_rows / width_block) * ((number_columns / width_block) + 1);
+            number_blocks = (number_rows / width_block) * ((number_columns / width_block) + 1); // Consideración de nº de bloques exactos formados por fila y nº de bloques por exceso por columna
             situation = 1;
         }
         else if (number_columns % width_block == 0)// Número de elementos múltiplos de 16 en columna
         {
-            number_blocks = ((number_rows / width_block) + 1) * (number_columns / width_block);
+            number_blocks = ((number_rows / width_block) + 1) * (number_columns / width_block); // Consideración de nº de bloques exactos formados por columna y nº de bloques por exceso por fila
             situation = 2;
         }
         else // Número de elementos no son múltiplos de 16 ni en columna ni en fila
         {
-            number_blocks = ((number_rows / width_block) + 1) * ((number_columns / width_block) + 1);
+            number_blocks = ((number_rows / width_block) + 1) * ((number_columns / width_block) + 1); // Consideración de nº de bloques por exceso por fila y por columna
             situation = 3;
         }
         operation(size, width, number_blocks, number_threads, number_columns, number_rows, execution_mode, width_block, situation);// Imprime las distintas matrices del juego de acuerdo al avance del mismo
 
     }
-    else
+    else // Si el tamaño de la matriz es mayor al máximo número de hilos por bloque que admite la GPU 
     {
         printf("No son validas las dimensiones introducidas para la matriz.\n");
     }
@@ -301,7 +301,7 @@ int main(int argc, char* argv[])
 void operation(int size, int width, int nBlocks, int nThreads, int number_columns, int number_rows, char execution_mode, int width_block, int situation)
 // Imprime las distintas matrices del juego de acuerdo al avance del mismo
 {
-    int counter = 1;
+    int counter = 1; //Contador de número de paso de matriz del juego
     char* a = (char*)malloc(size * sizeof(char));
     char* b = (char*)malloc(size * sizeof(char));
     generate_matrix(a, size, nBlocks, nThreads, number_columns, number_rows, width_block, situation); //Se genera la matriz inicial
@@ -358,7 +358,7 @@ void operation(int size, int width, int nBlocks, int nThreads, int number_column
             getchar();
         }
     }
-    if (execution_mode != 'm' && execution_mode != 'a')
+    if (execution_mode != 'm' && execution_mode != 'a')//Si el modo ejecución es distinto a los propuestos parar el programa
     {
         printf("El modo de ejecucion del programa es incorrecto.\n");
     }
