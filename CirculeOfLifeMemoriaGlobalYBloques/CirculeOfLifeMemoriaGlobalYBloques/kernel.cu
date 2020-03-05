@@ -8,8 +8,9 @@
 #include <time.h>
 #include "../common/book.h"
 
-//Elabora un número aleatorio
-__global__ void make_rand(int seed, char* m, int size) {
+__global__ void make_rand(int seed, char* m, int size) 
+//Coloca una célula viva en una posición de la matriz
+{
     float myrandf;
     int num;
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -23,8 +24,8 @@ __global__ void make_rand(int seed, char* m, int size) {
         m[num] = 'X';
     }
 }
-//Se da el valor inicial de las distintas casillas de la matriz
 __global__ void prepare_matrix(char* p, int number_columns, int number_rows, int width_block, int situation)
+//Se da el valor inicial de las distintas casillas de la matriz
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     int valAux = 0;
@@ -65,8 +66,8 @@ __global__ void prepare_matrix(char* p, int number_columns, int number_rows, int
     }
 }
 
-//Se genera una matriz de manera que los elementos bajan una fila
 __global__ void matrix_operation(char* m, char* p, int width, int size, int number_columns, int number_rows, int width_block, int situation) {
+    //Realiza todas las operaciones del juego de la vida
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     int counter = 0;
     int valAux = 0;
@@ -96,7 +97,7 @@ __global__ void matrix_operation(char* m, char* p, int width, int size, int numb
     }
     if (verify) //Solo realizarán esta operación aquellos hilos que hayan cumplido una de las condiciones anteriores
     {
-        if ((situation == 1) || (situation == 3))
+        if ((situation == 1) || (situation == 3))//Situaciones en las que el número de elementos en las columnas son distintas al múltiplo del ancho de bloque
         {
             // Dado que el idx no tiene porque coincidir con la posición de la matriz donde se debe colocar el valor se debe modificar el valor de acuerdo al número de columnas
             // Se obtiene el número de bloques en exceso para representar todas las columnas
@@ -107,7 +108,7 @@ __global__ void matrix_operation(char* m, char* p, int width, int size, int numb
             valAux = idx - valAux;
 
         }
-        else if ((situation == 0) || (situation == 2))
+        else if ((situation == 0) || (situation == 2))//Situaciones en las que el número de elementos en las columnas son iguales al múltiplo del ancho de bloque
         {
             valAux = idx;
         }
@@ -145,7 +146,7 @@ __global__ void matrix_operation(char* m, char* p, int width, int size, int numb
             counter++;
         }
 
-        if (situation == 1 || situation == 3)
+        if (situation == 1 || situation == 3)//Situaciones en las que el número de elementos en las columnas son distintas al múltiplo del ancho de bloque
         {
             // Dado que el idx no tiene porque coincidir con la posición de la matriz donde se debe colocar el valor se debe modificar el valor de acuerdo al número de columnas
                 // Se obtiene el número de bloques en exceso para representar todas las columnas
@@ -166,7 +167,7 @@ __global__ void matrix_operation(char* m, char* p, int width, int size, int numb
                 p[idx - valAux] = m[idx - valAux];
             }
         }
-        else if((situation == 0) || (situation == 2)) // Situaciones 0 o 2
+        else if((situation == 0) || (situation == 2)) //Situaciones en las que el número de elementos en las columnas son iguales al múltiplo del ancho de bloque
         {
             if ((counter == 3) && (m[idx] == 'O')) // Una célula muerte se convierte en viva si tiene 3 células vivas alrededor de ella
             {
@@ -203,23 +204,25 @@ int main(int argc, char* argv[])
     int width_block = 16;
     char execution_mode = 'a';
     // Condiciones para los casos en los que se está pasando por terminal una serie de parámetros
-    if (argc == 2)
+    if (argc == 2)//Consideración si solo se pasan dos parámetros por consola
     {
         execution_mode = argv[1][0];
     }
-    else if (argc == 3)
+    else if (argc == 3)//Consideración si solo se pasan tres parámetros por consola
     {
         execution_mode = argv[1][0];
         number_rows = atoi(argv[2]);
     }
-    else if (argc >= 4)
+    else if (argc >= 4)//Consideración si solo se pasan cuatro o más parámetros por consola
     {
         execution_mode = argv[1][0];
         number_rows = atoi(argv[2]);
         number_columns = atoi(argv[3]);
     }
-    int size = number_rows * number_columns;
-    int width = number_columns;
+    int size = number_rows * number_columns; //Tamaño de la matriz
+    int width = number_columns; //Ancho del bloque
+    //El código comentado es una variante en la que, dependiendo del número de filas y columnas y el tamaño de la matriz, los bloques se formarán de una forma u otra ya se ha en bloques con unos pocos
+    //elementos o en bloques de 8x8 o 16x16 (este último es el que no se encuentra comentado
     /*if ((size <= 8*8)||(number_rows < 8) || (number_columns < 8)) 
         // Si el tamaño de la matriz es inferior o igual a 64 o el cualquiera, ya sea el número de elementos por fila o por columna es inferior a 8
     {
@@ -257,8 +260,9 @@ int main(int argc, char* argv[])
         }
         operation(size, width, number_blocks, number_threads, number_columns, number_rows, execution_mode, width_block, situation);
     }
-    else*/ if (size <= maxThreads)
-        // Si el tamaño de la matriz es inferior o igual a 1024 
+    else*/ 
+    if (size <= maxThreads)
+        // Si el tamaño de la matriz es inferior o igual al número máximo de hilos que admite cada bloque 
     {
         //width_block = 16;
         number_threads = width_block * width_block;
@@ -277,31 +281,30 @@ int main(int argc, char* argv[])
             number_blocks = ((number_rows / width_block) + 1) * (number_columns / width_block);
             situation = 2;
         }
-        else
+        else // Número de elementos no son múltiplos de 16 ni en columna ni en fila
         {
             number_blocks = ((number_rows / width_block) + 1) * ((number_columns / width_block) + 1);
             situation = 3;
         }
-        operation(size, width, number_blocks, number_threads, number_columns, number_rows, execution_mode, width_block, situation);
+        operation(size, width, number_blocks, number_threads, number_columns, number_rows, execution_mode, width_block, situation);// Imprime las distintas matrices del juego de acuerdo al avance del mismo
+
     }
     else
     {
-        printf("No son válidas las dimensiones introducidas para la matriz.\n");
+        printf("No son validas las dimensiones introducidas para la matriz.\n");
     }
-
-
     getchar();
     getchar();
     return 0;
 }
 
 void operation(int size, int width, int nBlocks, int nThreads, int number_columns, int number_rows, char execution_mode, int width_block, int situation)
-//Realiza todas las operaciones del juego de la vida
+// Imprime las distintas matrices del juego de acuerdo al avance del mismo
 {
     int counter = 1;
     char* a = (char*)malloc(size * sizeof(char));
     char* b = (char*)malloc(size * sizeof(char));
-    generate_matrix(a, size, nBlocks, nThreads, number_columns, number_rows, width_block, situation);
+    generate_matrix(a, size, nBlocks, nThreads, number_columns, number_rows, width_block, situation); //Se genera la matriz inicial
     printf("Situacion Inicial:\n");
     for (int i = 0; i < size; i++)//Representación matriz inicial
     {
@@ -314,13 +317,14 @@ void operation(int size, int width, int nBlocks, int nThreads, int number_column
             printf("%c ", a[i]);
         }
     }
-    while (true)
+    while (execution_mode == 'm' || execution_mode == 'a')
     {
+        //Va alternando las matrices para realizar las operaciones del juego considerando una como matriz inicial y otra como final
         if (counter % 2 == 1)
         {
-            step_life(a, b, width, size, nBlocks, nThreads, number_columns, number_rows, width_block, situation);
+            step_life(a, b, width, size, nBlocks, nThreads, number_columns, number_rows, width_block, situation);//Se realiza un paso del juego de la vida
             printf("Matriz paso %d:\n", counter);
-            for (int i = 0; i < size; i++)//Representación matriz inicial
+            for (int i = 0; i < size; i++)//Representación matriz en un paso en concreto
             {
                 if (i % width == width - 1)
                 {
@@ -334,9 +338,9 @@ void operation(int size, int width, int nBlocks, int nThreads, int number_column
         }
         else
         {
-            step_life(b, a, width, size, nBlocks, nThreads, number_columns, number_rows, width_block, situation);
+            step_life(b, a, width, size, nBlocks, nThreads, number_columns, number_rows, width_block, situation);//Se realiza un paso del juego de la vida
             printf("Matriz paso %d:\n", counter);
-            for (int i = 0; i < size; i++)//Representación matriz inicial
+            for (int i = 0; i < size; i++)//Representación matriz en un paso en concreto
             {
                 if (i % width == width - 1)
                 {
@@ -354,6 +358,10 @@ void operation(int size, int width, int nBlocks, int nThreads, int number_column
             getchar();
         }
     }
+    if (execution_mode != 'm' && execution_mode != 'a')
+    {
+        printf("El modo de ejecucion del programa es incorrecto.\n");
+    }
 
     free(a);
     free(b);
@@ -366,7 +374,7 @@ void generate_matrix(char* m, int size, int nBlocks, int nThreads, int number_co
     srand(time(NULL));
     int seed = rand() % 50000;
     char* m_d;
-    int numElem = generate_random(1, size*0.25);// Genera un número aleatorio de máxima número de células vivas en la etapa inicial siendo el máximo un 15% del máximo número de casillas
+    int numElem = generate_random(1, size*0.15);// Genera un número aleatorio de máxima número de células vivas en la etapa inicial siendo el máximo un 15% del máximo número de casillas
     cudaMalloc((void**)&m_d, size * sizeof(char));
     cudaMemcpy(m_d, m, size * sizeof(char), cudaMemcpyHostToDevice);
     prepare_matrix << <nBlocks, nThreads >> > (m_d, number_columns, number_rows, width_block, situation); //Prepara la matriz con todas las casillas con células muertas
@@ -452,7 +460,6 @@ void show_info_gpu_card() // Muestra las características de la tarjeta gráfica u
         printf("Memoria global total: %zu GB.\n", prop.totalGlobalMem / (1024 * 1024 * 1024));
         printf("Memoria constante total: %zu Bytes.\n", prop.totalConstMem);
         printf("Memoria compartida por bloque: %zu Bytes.\n", prop.sharedMemPerBlock);
-        printf("Ancho del bus de memoria global: &d.\n", prop.memoryBusWidth);
         printf("Numero registros compartidos por bloque: %d.\n", prop.regsPerBlock);
         printf("Numero hilos maximos por bloque: %d.\n", prop.maxThreadsPerBlock);
         printf("Memoria compartida por multiprocesador: %zu Bytes.\n", prop.sharedMemPerMultiprocessor);
